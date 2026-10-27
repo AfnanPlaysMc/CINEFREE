@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile document",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 320 },
+        "displayName": { "type": "string", "maxLength": 150 },
+        "photoURL": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "email", "createdAt"]
+    },
+    "WatchlistItem": {
+      "title": "WatchlistItem",
+      "description": "A saved movie or TV show in the user's watchlist",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "mediaId": { "type": "string", "maxLength": 64 },
+        "mediaType": { "type": "string", "enum": ["movie", "tv"] },
+        "title": { "type": "string", "maxLength": 300 },
+        "posterPath": { "type": "string", "maxLength": 300 },
+        "backdropPath": { "type": "string", "maxLength": 300 },
+        "voteAverage": { "type": "number" },
+        "releaseDate": { "type": "string", "maxLength": 50 },
+        "overview": { "type": "string", "maxLength": 3000 },
+        "addedAt": { "type": "string" },
+        "userId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["id", "mediaId", "mediaType", "title", "userId", "addedAt"]
+    },
+    "HistoryItem": {
+      "title": "HistoryItem",
+      "description": "A recently viewed title",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "mediaId": { "type": "string", "maxLength": 64 },
+        "mediaType": { "type": "string", "enum": ["movie", "tv"] },
+        "title": { "type": "string", "maxLength": 300 },
+        "posterPath": { "type": "string", "maxLength": 300 },
+        "viewedAt": { "type": "string" },
+        "userId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["id", "mediaId", "mediaType", "title", "userId", "viewedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile data, readable and writable only by the authenticated owner"
+    },
+    "/users/{userId}/watchlist/{itemId}": {
+      "schema": "WatchlistItem",
+      "description": "User watchlist item, accessible only by the owner"
+    },
+    "/users/{userId}/history/{itemId}": {
+      "schema": "HistoryItem",
+      "description": "User viewing history, accessible only by the owner"
+    }
+  }
+}

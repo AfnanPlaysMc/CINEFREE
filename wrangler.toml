@@ -1,0 +1,9 @@
+name = "cinefree"
+compatibility_date = "2024-09-23"
+
+[site]
+bucket = "./dist"
+
+[vars]
+NODE_ENV = "production"
+# TMDB_API_KEY can be added as an encrypted secret using `wrangler secret put TMDB_API_KEY`
