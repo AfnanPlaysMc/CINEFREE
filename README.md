@@ -49,22 +49,10 @@
 ## 3. Prerequisites
 
 - Node.js 20+ installed locally
-- (Optional) A free TMDB API key from [themoviedb.org](https://www.themoviedb.org/)
 
 ---
 
-## 4. How to Obtain a TMDB API Key
-
-1. Register for a free account at [themoviedb.org](https://www.themoviedb.org/signup).
-2. Go to **Settings > API** in your TMDB user profile.
-3. Request an API key (select Developer / Personal use).
-4. Copy your **API Key (v3 auth)**.
-
-> **Note:** CineFree includes an authentic built-in seed cache for all 11 required catalog categories, trailers, and detail pages. If no TMDB key is provided, the application continues to run seamlessly without broken links or blank screens.
-
----
-
-## 5. Configuration & Environment Variables
+## 4. Configuration & Environment Variables
 
 Create a `.env.local` or `.env` file in the project root:
 
@@ -78,7 +66,7 @@ PORT=3000
 
 ---
 
-## 6. Installation & Development
+## 5. Installation & Development
 
 ```bash
 # Install dependencies
@@ -95,7 +83,7 @@ Visit `http://localhost:3000` in your browser.
 
 ---
 
-## 7. Production Build & Deployment
+## 6. Production Build & Deployment
 
 ### Standard Node / Container Build
 ```bash
@@ -124,19 +112,7 @@ npm start
 
 ---
 
-## 8. Free-Tier Limits & Usage
-
-- **TMDB API:** TMDB rate-limits requests to approximately 40 requests per 10 seconds. CineFree's server-side proxy handles this with:
-  - 1-hour in-memory catalog response caching
-  - Request deduplication for simultaneous calls
-  - 350ms debounced search to minimize API query volume
-- **Firebase Free Tier (Spark Plan):**
-  - Up to 50,000 reads and 20,000 writes per day on Cloud Firestore at no cost.
-  - Unlimited Google Authentication accounts on Firebase Auth.
-
----
-
-## 9. Legal & Trademark Attribution
+## 7. Legal & Trademark Attribution
 
 - **TMDB Attribution:** This product uses the TMDB API but is not endorsed or certified by TMDB.
 - **Content Rights:** TMDB metadata does not automatically provide rights to stream full movies or TV episodes. CineFree embeds authorized official trailers, verified open archive public domain works, and links users to verified streaming services.
