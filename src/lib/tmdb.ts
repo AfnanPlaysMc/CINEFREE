@@ -47,13 +47,30 @@ async function tmdbFetch<T>(endpoint: string, params: Record<string, string | nu
     headers['x-tmdb-key'] = customKey;
   }
 
-  const res = await fetch(url.toString(), { headers });
-  if (!res.ok) {
-    const errorBody = await res.json().catch(() => ({}));
-    throw new Error(errorBody.message || `Failed to fetch from ${endpoint} (Status ${res.status})`);
+  try {
+    const res = await fetch(url.toString(), { headers });
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('application/json')) {
+      return res.json() as Promise<T>;
+    }
+  } catch (err) {
+    // Fall through to direct TMDB fetch
   }
 
-  return res.json() as Promise<T>;
+  // Fallback: Direct TMDB fetch for static deployments (Vercel / Netlify without Express server)
+  const directUrl = new URL(`https://api.themoviedb.org/3${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`);
+  directUrl.searchParams.set('api_key', customKey || '407886e825dc0d2581cc397ce2289f4a');
+  Object.entries(params).forEach(([key, val]) => {
+    if (val !== undefined && val !== null && val !== '') {
+      directUrl.searchParams.set(key, String(val));
+    }
+  });
+
+  const directRes = await fetch(directUrl.toString());
+  if (!directRes.ok) {
+    throw new Error(`Failed to fetch from TMDB (Status ${directRes.status})`);
+  }
+  return directRes.json() as Promise<T>;
 }
 
 export async function checkServerConfig(): Promise<{ hasTmdbKey: boolean; mode: string }> {
