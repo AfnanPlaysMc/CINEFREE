@@ -53,8 +53,8 @@ export function buildStreamServers(
       badge: 'Recommended • 1080p/4K',
       description: 'Primary Multi-CDN aggregator node with ultra high-speed global streaming.',
       embedUrl: isMovie
-        ? `https://multiembed.fun/?video_id=${mediaId}&tmdb=1`
-        : `https://multiembed.fun/?video_id=${mediaId}&tmdb=1&s=${season}&e=${episode}`
+        ? `https://multiembed.mov/?video_id=${mediaId}&tmdb=1`
+        : `https://multiembed.mov/?video_id=${mediaId}&tmdb=1&s=${season}&e=${episode}`
     },
     {
       id: 'twoembed',
@@ -109,9 +109,9 @@ export function getDownloadServerUrl(
   
   // Direct Server Stream Download Endpoints
   if (isMovie) {
-    return `https://multiembed.fun/?video_id=${mediaId}&tmdb=1&download=1&quality=${quality}`;
+    return `https://multiembed.mov/?video_id=${mediaId}&tmdb=1&download=1&quality=${quality}`;
   } else {
-    return `https://multiembed.fun/?video_id=${mediaId}&tmdb=1&s=${season}&e=${episode}&download=1&quality=${quality}`;
+    return `https://multiembed.mov/?video_id=${mediaId}&tmdb=1&s=${season}&e=${episode}&download=1&quality=${quality}`;
   }
 }
 
