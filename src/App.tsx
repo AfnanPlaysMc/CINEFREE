@@ -153,12 +153,24 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Launch full movie playback directly in popout window
+  // Launch full movie playback in clean popout window
   const handlePlayMovie = (item: TMDBMediaItem, episodeTitle?: string) => {
     const type: 'movie' | 'tv' = item.media_type || ('title' in item && item.title ? 'movie' : 'tv');
     const title = 'title' in item && item.title ? item.title : 'name' in item ? item.name : 'Movie';
     const stream = getFullMovieStream(item.id, String(title), type, episodeTitle);
-    setActiveStream(stream);
+    
+    const defaultServerUrl = stream.servers[0]?.embedUrl;
+    if (defaultServerUrl) {
+      const width = 1240;
+      const height = 700;
+      const left = Math.max(0, (window.screen.width - width) / 2);
+      const top = Math.max(0, (window.screen.height - height) / 2);
+      window.open(
+        defaultServerUrl,
+        `cinefree_stream_${stream.mediaId}`,
+        `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes`
+      );
+    }
   };
 
   return (

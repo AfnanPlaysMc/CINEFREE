@@ -154,8 +154,18 @@ export const DetailView: React.FC<DetailViewProps> = ({
 
   const handlePlayFullMovie = () => {
     const stream = activeStream || getFullMovieStream(mediaId, title, mediaType);
-    setActiveStream(stream);
-    setShowPlayer(true);
+    const defaultServerUrl = stream.servers[0]?.embedUrl;
+    if (defaultServerUrl) {
+      const width = 1240;
+      const height = 700;
+      const left = Math.max(0, (window.screen.width - width) / 2);
+      const top = Math.max(0, (window.screen.height - height) / 2);
+      window.open(
+        defaultServerUrl,
+        `cinefree_stream_${stream.mediaId}`,
+        `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes`
+      );
+    }
   };
 
   const handlePlayEpisode = (ep: TMDBEpisode) => {
@@ -169,8 +179,18 @@ export const DetailView: React.FC<DetailViewProps> = ({
       sNum,
       eNum
     );
-    setActiveStream(stream);
-    setShowPlayer(true);
+    const defaultServerUrl = stream.servers[0]?.embedUrl;
+    if (defaultServerUrl) {
+      const width = 1240;
+      const height = 700;
+      const left = Math.max(0, (window.screen.width - width) / 2);
+      const top = Math.max(0, (window.screen.height - height) / 2);
+      window.open(
+        defaultServerUrl,
+        `cinefree_stream_${stream.mediaId}`,
+        `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes`
+      );
+    }
   };
 
   if (loading) {
