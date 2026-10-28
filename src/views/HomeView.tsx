@@ -23,6 +23,8 @@ import { useWatchlist } from '../context/WatchlistContext';
 import { History, Film } from 'lucide-react';
 import { getImageUrl } from '../lib/utils';
 
+import { FloatingMovieShowcase } from '../components/FloatingMovieShowcase';
+
 interface HomeViewProps {
   onSelectItem: (item: TMDBMediaItem) => void;
   onPlayMovie?: (item: TMDBMediaItem) => void;
@@ -113,6 +115,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectItem, onPlayMovie, o
       ) : (
         <Hero
           movie={heroMovie}
+          items={trendingMovies}
           onPlayMovie={playHandler}
           onMoreInfo={(m) => onSelectItem(m as TMDBMediaItem)}
         />
@@ -177,6 +180,14 @@ export const HomeView: React.FC<HomeViewProps> = ({ onSelectItem, onPlayMovie, o
           onSelectItem={onSelectItem}
           onPlayMovie={playHandler}
         />
+
+        {trendingMovies.length > 0 && (
+          <FloatingMovieShowcase
+            items={trendingMovies as TMDBMediaItem[]}
+            onSelectItem={onSelectItem}
+            onPlayMovie={playHandler}
+          />
+        )}
 
         {freeFullMovies.length > 0 && (
           <MovieRow

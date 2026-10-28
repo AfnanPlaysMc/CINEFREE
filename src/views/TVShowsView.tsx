@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { fetchTrendingTV, fetchPopularTV, fetchTopRatedTV } from '../lib/tmdb';
 import { TMDBMediaItem, TMDBTVShow } from '../lib/tmdb-types';
 import { MediaGrid } from '../components/MediaGrid';
@@ -17,24 +17,29 @@ interface TVShowsViewProps {
 export const TVShowsView: React.FC<TVShowsViewProps> = ({ onSelectItem, onPlayMovie, onPlayTrailer }) => {
   const [activeTab, setActiveTab] = useState<'trending' | 'popular' | 'top_rated'>('trending');
   const [shows, setShows] = useState<TMDBTVShow[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const playHandler = onPlayMovie || onPlayTrailer;
 
   useEffect(() => {
     let isCancelled = false;
     setLoading(true);
+    setPage(1);
 
     const loadPromise =
       activeTab === 'trending'
-        ? fetchTrendingTV()
+        ? fetchTrendingTV(1)
         : activeTab === 'popular'
-        ? fetchPopularTV()
-        : fetchTopRatedTV();
+        ? fetchPopularTV(1)
+        : fetchTopRatedTV(1);
 
     loadPromise
       .then((data) => {
         if (!isCancelled && data.results) {
           setShows(data.results.map((t) => ({ ...t, media_type: 'tv' as const })));
+          setTotalPages(data.total_pages || 1);
           setLoading(false);
         }
       })
@@ -48,13 +53,51 @@ export const TVShowsView: React.FC<TVShowsViewProps> = ({ onSelectItem, onPlayMo
     };
   }, [activeTab]);
 
+  const loadMore = useCallback(() => {
+    if (loadingMore || page >= totalPages) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+
+    const loadPromise =
+      activeTab === 'trending'
+        ? fetchTrendingTV(nextPage)
+        : activeTab === 'popular'
+        ? fetchPopularTV(nextPage)
+        : fetchTopRatedTV(nextPage);
+
+    loadPromise
+      .then((data) => {
+        if (data.results) {
+          setShows((prev) => [
+            ...prev,
+            ...data.results.map((t) => ({ ...t, media_type: 'tv' as const })),
+          ]);
+          setPage(nextPage);
+        }
+        setLoadingMore(false);
+      })
+      .catch(() => {
+        setLoadingMore(false);
+      });
+  }, [loadingMore, page, totalPages, activeTab]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 800) {
+        loadMore();
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loadMore]);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 pt-24 min-h-screen">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight">Television & Series</h1>
+          <h1 className="text-3xl font-black text-white tracking-tight">Television & Series Catalog</h1>
           <p className="text-sm text-zinc-400 mt-1">
-            Discover binge-worthy series, limited seasons, and full episode streaming.
+            Unlimited binge-worthy series discovery with multi-server streaming.
           </p>
         </div>
 
@@ -81,8 +124,20 @@ export const TVShowsView: React.FC<TVShowsViewProps> = ({ onSelectItem, onPlayMo
         onSelectItem={onSelectItem}
         onPlayMovie={playHandler}
         emptyTitle="No Series Found"
-        emptyDescription="We could not load television series from TMDB at this moment. Please try again shortly."
+        emptyDescription="We could not load television series at this moment. Please try again shortly."
       />
+
+      {!loading && page < totalPages && (
+        <div className="mt-12 text-center">
+          <button
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="px-6 py-3 rounded-xl bg-[#1c1c24] hover:bg-[#282834] text-white font-bold text-xs border border-white/10 transition-all cursor-pointer shadow-xl disabled:opacity-50"
+          >
+            {loadingMore ? 'Loading More Series...' : 'Load More Series'}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

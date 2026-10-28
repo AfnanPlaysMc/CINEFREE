@@ -1,24 +1,140 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 @import "tailwindcss";
 
 @layer utilities {
-  /* Hide scrollbar for Chrome, Safari and Opera */
   .scrollbar-none::-webkit-scrollbar {
     display: none;
   }
-  /* Hide scrollbar for IE, Edge and Firefox */
   .scrollbar-none {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
 
 html {
   scroll-behavior: smooth;
-  color-scheme: dark;
 }
 
-body {
-  background-color: #0b0b0f;
-  color: #ffffff;
-  overflow-x: hidden;
+/* Dark Theme: Black & Blue */
+html.dark {
+  --bg-main: #050811;
+  --bg-card: #0f172a;
+  --bg-header: rgba(5, 8, 17, 0.92);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --accent-blue: #3b82f6;
+  --border-color: rgba(255, 255, 255, 0.08);
+  background-color: #050811;
+  color: #f8fafc;
+}
+
+html.dark body {
+  background-color: #050811;
+  color: #f8fafc;
+}
+
+/* Light Theme: White & Blue */
+html.light {
+  --bg-main: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-header: rgba(255, 255, 255, 0.92);
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --accent-blue: #2563eb;
+  --border-color: rgba(15, 23, 42, 0.1);
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+html.light body {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+/* Light Theme Component Overrides */
+html.light .bg-\[\#050508\],
+html.light .bg-\[\#0b0b0f\],
+html.light .bg-\[\#09090f\],
+html.light .bg-\[\#141419\],
+html.light .bg-\[\#1c1c24\],
+html.light .bg-\[\#14141d\] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+/* Specific Light Theme Text Overrides - preserve contrast on buttons and badges */
+html.light h1:not(.hero-cinematic *),
+html.light h2:not(.hero-cinematic *),
+html.light h3:not(.hero-cinematic *),
+html.light h4:not(.hero-cinematic *) {
+  color: #0f172a;
+}
+
+html.light .hero-cinematic,
+html.light .hero-cinematic * {
+  color: revert;
+}
+
+.hero-cinematic h1,
+.hero-cinematic .hero-title {
+  color: #ffffff !important;
+}
+
+.hero-cinematic p,
+.hero-cinematic .hero-desc {
+  color: #e2e8f0 !important;
+}
+
+/* Ensure colored buttons and badges always have crisp white text */
+.bg-blue-600,
+.bg-blue-700,
+.bg-red-600,
+button[class*="bg-blue"],
+span[class*="bg-blue"] {
+  color: #ffffff !important;
+}
+
+html.light .border-white\/5,
+html.light .border-white\/10,
+html.light .border-white\/20 {
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+/* Spider-Man Easter Egg Animation Keyframes */
+@keyframes spiderDrop {
+  0% { transform: translateY(-120%) scale(0.8); opacity: 0; }
+  25% { transform: translateY(0%) scale(1.1); opacity: 1; }
+  45% { transform: translateY(12px) rotate(10deg); }
+  65% { transform: translateY(-8px) rotate(-10deg); }
+  85% { transform: translateY(0%) scale(1); opacity: 1; }
+  100% { transform: translateY(-130%) scale(0.8); opacity: 0; }
+}
+
+.animate-spider {
+  animation: spiderDrop 7s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes floatPoster {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(1.5deg); }
+}
+
+.animate-float-poster {
+  animation: floatPoster 4s ease-in-out infinite;
+}
+
+/* Smooth Hero Ken Burns Zoom Animation */
+@keyframes kenBurnsZoom {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+.animate-kenburns {
+  animation: kenBurnsZoom 20s ease-in-out infinite alternate;
 }

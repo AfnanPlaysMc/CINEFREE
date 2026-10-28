@@ -4,12 +4,11 @@
  */
 
 export type StreamServerId = 
-  | 'vidlink' 
-  | 'vidsrc_icu' 
-  | 'vidsrc_sh' 
+  | 'multiembed'
   | 'twoembed' 
-  | 'multiembed' 
-  | 'autoembed';
+  | 'vidsrc_sh' 
+  | 'vidlink' 
+  | 'vidsrc_icu';
 
 export interface StreamServer {
   id: StreamServerId;
@@ -36,8 +35,8 @@ export interface MovieStreamSource {
 }
 
 /**
- * Builds real streaming server endpoints matching GoMovies and Cinego
- * across millions of movies and TV titles globally.
+ * Builds real verified streaming server endpoints for movies and TV shows,
+ * prioritizing MultiEmbed as the main server.
  */
 export function buildStreamServers(
   mediaId: number,
@@ -49,64 +48,75 @@ export function buildStreamServers(
 
   return [
     {
-      id: 'vidlink',
-      name: 'Server 1: VidLink HD',
-      badge: 'Recommended',
-      description: 'Ultra-fast HD cloud streaming with multi-subtitles and minimal buffering.',
-      embedUrl: isMovie
-        ? `https://vidlink.pro/movie/${mediaId}?primaryColor=e50914&secondaryColor=121212&iconColor=ffffff`
-        : `https://vidlink.pro/tv/${mediaId}/${season}/${episode}?primaryColor=e50914&secondaryColor=121212&iconColor=ffffff`
-    },
-    {
-      id: 'vidsrc_icu',
-      name: 'Server 2: VidSrc Pro',
-      badge: 'Multi-Audio',
-      description: 'High-availability streaming network with multiple audio and subtitle tracks.',
-      embedUrl: isMovie
-        ? `https://vidsrc.icu/embed/movie/${mediaId}`
-        : `https://vidsrc.icu/embed/tv/${mediaId}/${season}/${episode}`
-    },
-    {
-      id: 'vidsrc_sh',
-      name: 'Server 3: VidSrc SH',
-      badge: 'Direct Mirror',
-      description: 'Clean direct mirror server without sandbox restrictions.',
-      embedUrl: isMovie
-        ? `https://vidsrc.sh/embed/movie?tmdb=${mediaId}`
-        : `https://vidsrc.sh/embed/tv?tmdb=${mediaId}&sea=${season}&epi=${episode}`
-    },
-    {
-      id: 'twoembed',
-      name: 'Server 4: 2Embed',
-      badge: 'High Speed',
-      description: 'Fast streaming node with extensive global catalog coverage.',
-      embedUrl: isMovie
-        ? `https://www.2embed.cc/embed/${mediaId}`
-        : `https://www.2embed.cc/embedtv/${mediaId}&s=${season}&e=${episode}`
-    },
-    {
       id: 'multiembed',
-      name: 'Server 5: MultiEmbed',
-      badge: 'Aggregator',
-      description: 'Multi-CDN aggregation network for uninterrupted film & television streaming.',
+      name: 'Server 1: MultiEmbed HD (Primary)',
+      badge: 'Recommended • 1080p/4K',
+      description: 'Primary Multi-CDN aggregator node with ultra high-speed global streaming.',
       embedUrl: isMovie
         ? `https://multiembed.mov/?video_id=${mediaId}&tmdb=1`
         : `https://multiembed.mov/?video_id=${mediaId}&tmdb=1&s=${season}&e=${episode}`
     },
     {
-      id: 'autoembed',
-      name: 'Server 6: AutoEmbed',
-      badge: 'Adaptive CDN',
-      description: 'High-speed adaptive bitrate stream with instantaneous start times.',
+      id: 'twoembed',
+      name: 'Server 2: 2Embed HD',
+      badge: 'Fast Mirror',
+      description: 'Secondary high-bandwidth node with global film and TV coverage.',
       embedUrl: isMovie
-        ? `https://player.autoembed.cc/embed/movie/${mediaId}`
-        : `https://player.autoembed.cc/embed/tv/${mediaId}/${season}/${episode}`
+        ? `https://www.2embed.cc/embed/${mediaId}`
+        : `https://www.2embed.cc/embedtv/${mediaId}&s=${season}&e=${episode}`
+    },
+    {
+      id: 'vidsrc_sh',
+      name: 'Server 3: VidSrc SH',
+      badge: 'Direct Mirror',
+      description: 'High-availability VidSrc stream mirror.',
+      embedUrl: isMovie
+        ? `https://vidsrc.sh/embed/movie?tmdb=${mediaId}`
+        : `https://vidsrc.sh/embed/tv?tmdb=${mediaId}&sea=${season}&epi=${episode}`
+    },
+    {
+      id: 'vidlink',
+      name: 'Server 4: VidLink HD',
+      badge: 'Multi-Subtitles',
+      description: 'Cloud streaming server with built-in multi-subtitle support.',
+      embedUrl: isMovie
+        ? `https://vidlink.pro/movie/${mediaId}?primaryColor=e50914`
+        : `https://vidlink.pro/tv/${mediaId}/${season}/${episode}?primaryColor=e50914`
+    },
+    {
+      id: 'vidsrc_icu',
+      name: 'Server 5: VidSrc Pro',
+      badge: 'Multi-Audio',
+      description: 'Alternative VidSrc network with multiple audio tracks.',
+      embedUrl: isMovie
+        ? `https://vidsrc.icu/embed/movie/${mediaId}`
+        : `https://vidsrc.icu/embed/tv/${mediaId}/${season}/${episode}`
     }
   ];
 }
 
 /**
- * Resolves full playable movie or TV episode stream for any title in the entire world.
+ * Builds direct streaming CDN download URLs using server infrastructure.
+ */
+export function getDownloadServerUrl(
+  mediaId: number,
+  mediaType: 'movie' | 'tv',
+  quality: '4k' | '1080p' | '720p' | '480p' = '1080p',
+  season = 1,
+  episode = 1
+): string {
+  const isMovie = mediaType === 'movie';
+  
+  // Direct Server Stream Download Endpoints
+  if (isMovie) {
+    return `https://multiembed.mov/?video_id=${mediaId}&tmdb=1&download=1&quality=${quality}`;
+  } else {
+    return `https://multiembed.mov/?video_id=${mediaId}&tmdb=1&s=${season}&e=${episode}&download=1&quality=${quality}`;
+  }
+}
+
+/**
+ * Resolves full playable movie or TV episode stream for any title in the world.
  */
 export function getFullMovieStream(
   id: number,
@@ -128,9 +138,9 @@ export function getFullMovieStream(
     isFullMovie: true,
     verified: true,
     durationMinutes: mediaType === 'tv' ? 45 : 120,
-    description: `Full real movie stream via multi-server architecture.`,
+    description: `Full real stream via MultiEmbed, VidSrc, and 2Embed architecture.`,
     servers,
-    defaultServerId: 'vidlink'
+    defaultServerId: 'multiembed'
   };
 }
 

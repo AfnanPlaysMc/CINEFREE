@@ -13,7 +13,9 @@ import {
   Clock,
   Calendar,
   Film,
-  Share2
+  Share2,
+  Tv,
+  X
 } from 'lucide-react';
 import {
   fetchMovieDetails,
@@ -24,6 +26,8 @@ import {
   fetchTVCredits,
   fetchTVSimilar,
   fetchTVWatchProviders,
+  fetchMovieVideos,
+  fetchTVVideos
 } from '../lib/tmdb';
 import {
   TMDBMediaItem,
@@ -31,7 +35,8 @@ import {
   TMDBTVShow,
   TMDBCredits,
   TMDBWatchProvidersResponse,
-  TMDBEpisode
+  TMDBEpisode,
+  TMDBVideo
 } from '../lib/tmdb-types';
 import { getImageUrl, formatRuntime, formatYear, formatRating, getMediaTitle, isUnreleased } from '../lib/utils';
 import { useWatchlist } from '../context/WatchlistContext';
@@ -41,6 +46,7 @@ import { WatchProviders } from '../components/WatchProviders';
 import { MovieRow } from '../components/MovieRow';
 import { VideoPlayer } from '../components/VideoPlayer';
 import { MovieStreamSource, getFullMovieStream } from '../lib/providers';
+import { SpiderManEasterEgg } from '../components/SpiderManEasterEgg';
 
 interface DetailViewProps {
   mediaId: number;
@@ -68,11 +74,14 @@ export const DetailView: React.FC<DetailViewProps> = ({
   const [showPlayer, setShowPlayer] = useState(false);
   const [activeStream, setActiveStream] = useState<MovieStreamSource | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [showTrailer, setShowTrailer] = useState(false);
+  const [trailerKey, setTrailerKey] = useState<string | null>(null);
 
   useEffect(() => {
     let isCancelled = false;
     setLoading(true);
     setError(null);
+    setTrailerKey(null);
 
     const isMovie = mediaType === 'movie';
 
@@ -80,9 +89,10 @@ export const DetailView: React.FC<DetailViewProps> = ({
     const creditsPromise = isMovie ? fetchMovieCredits(mediaId) : fetchTVCredits(mediaId);
     const similarPromise = isMovie ? fetchMovieSimilar(mediaId) : fetchTVSimilar(mediaId);
     const providersPromise = isMovie ? fetchMovieWatchProviders(mediaId) : fetchTVWatchProviders(mediaId);
+    const videosPromise = isMovie ? fetchMovieVideos(mediaId) : fetchTVVideos(mediaId);
 
-    Promise.allSettled([detailPromise, creditsPromise, similarPromise, providersPromise])
-      .then(([detRes, credRes, simRes, provRes]) => {
+    Promise.allSettled([detailPromise, creditsPromise, similarPromise, providersPromise, videosPromise])
+      .then(([detRes, credRes, simRes, provRes, vidRes]) => {
         if (isCancelled) return;
 
         if (detRes.status === 'fulfilled') {
@@ -100,6 +110,15 @@ export const DetailView: React.FC<DetailViewProps> = ({
           setSimilar(simRes.value.results.map((r) => ({ ...r, media_type: mediaType } as TMDBMediaItem)));
         }
         if (provRes.status === 'fulfilled') setProviders(provRes.value);
+
+        if (vidRes.status === 'fulfilled' && vidRes.value.results && vidRes.value.results.length > 0) {
+          const official = vidRes.value.results.find(
+            (v) => (v.type === 'Trailer' || v.type === 'Teaser') && v.site === 'YouTube'
+          ) || vidRes.value.results[0];
+          if (official && official.key) {
+            setTrailerKey(official.key);
+          }
+        }
 
         setLoading(false);
       });
@@ -189,7 +208,8 @@ export const DetailView: React.FC<DetailViewProps> = ({
   }
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen pb-24 relative">
+      <SpiderManEasterEgg title={title} />
       {/* Header Backdrop Hero */}
       <div className="relative w-full h-[55vh] min-h-[420px] max-h-[600px] overflow-hidden bg-[#0b0b0f]">
         {backdropUrl && (
@@ -245,6 +265,16 @@ export const DetailView: React.FC<DetailViewProps> = ({
                 >
                   <Play className="w-4 h-4 fill-current ml-0.5" />
                   {mediaType === 'tv' ? 'Play Series' : 'Watch Full Movie'}
+                </button>
+              )}
+
+              {trailerKey && (
+                <button
+                  onClick={() => setShowTrailer(true)}
+                  className="w-full py-2.5 px-4 rounded-xl text-blue-400 hover:text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer bg-blue-600/15 hover:bg-blue-600 border border-blue-500/30 hover:border-blue-500"
+                >
+                  <Film className="w-4 h-4" />
+                  Watch Official Trailer
                 </button>
               )}
 
@@ -374,7 +404,9 @@ export const DetailView: React.FC<DetailViewProps> = ({
             )}
 
             {/* Top Billed Cast */}
-            {credits?.cast && credits.cast.length > 0 && <CastRow cast={credits.cast} />}
+            {credits?.cast && credits.cast.length > 0 && (
+              <CastRow cast={credits.cast} onSelectMedia={onSelectItem} />
+            )}
 
             {/* Authorized Streaming Providers Widget */}
             <WatchProviders providersData={providers} title={title} />
@@ -414,6 +446,28 @@ export const DetailView: React.FC<DetailViewProps> = ({
           stream={activeStream}
           onClose={() => setShowPlayer(false)}
         />
+      )}
+
+      {/* Official YouTube Trailer Modal */}
+      {showTrailer && trailerKey && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl p-3 sm:p-6 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-4xl aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-white/20">
+            <button
+              onClick={() => setShowTrailer(false)}
+              aria-label="Close trailer"
+              className="absolute top-3 right-3 z-20 p-2 rounded-full bg-black/70 hover:bg-red-600 text-white transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <iframe
+              src={`https://www.youtube-nocookie.com/embed/${trailerKey}?autoplay=1&rel=0`}
+              title={`${title} Official Trailer`}
+              className="w-full h-full border-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        </div>
       )}
     </div>
   );

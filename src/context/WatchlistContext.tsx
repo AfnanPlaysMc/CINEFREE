@@ -9,11 +9,12 @@ import {
   doc,
   setDoc,
   deleteDoc,
-  onSnapshot
+  onSnapshot,
+  getDocs
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from './AuthContext';
-import { TMDBMediaItem, TMDBMovie, TMDBTVShow } from '../lib/tmdb-types';
+import { TMDBMediaItem } from '../lib/tmdb-types';
 import { getMediaTitle, getMediaReleaseDate } from '../lib/utils';
 
 export interface WatchlistEntry {
@@ -48,6 +49,8 @@ interface WatchlistContextType {
   removeFromWatchlist: (id: string) => Promise<void>;
   addToHistory: (item: TMDBMediaItem) => Promise<void>;
   clearLocalData: () => void;
+  clearCloudData: () => Promise<void>;
+  syncLocalToCloud: () => Promise<number>;
   isCloudSynced: boolean;
 }
 
@@ -59,11 +62,13 @@ const WatchlistContext = createContext<WatchlistContextType>({
   removeFromWatchlist: async () => {},
   addToHistory: async () => {},
   clearLocalData: () => {},
+  clearCloudData: async () => {},
+  syncLocalToCloud: async () => 0,
   isCloudSynced: false,
 });
 
-const LOCAL_STORAGE_WATCHLIST = 'cinefree_local_watchlist';
-const LOCAL_STORAGE_HISTORY = 'cinefree_local_history';
+export const LOCAL_STORAGE_WATCHLIST = 'cinefree_local_watchlist';
+export const LOCAL_STORAGE_HISTORY = 'cinefree_local_history';
 
 export const WatchlistProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
@@ -107,6 +112,24 @@ export const WatchlistProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Real-time Firestore sync when user is authenticated
   useEffect(() => {
     if (!user) return;
+
+    // Auto-migrate local items to cloud on login if any exist
+    try {
+      const saved = localStorage.getItem(LOCAL_STORAGE_WATCHLIST);
+      if (saved) {
+        const localItems: WatchlistEntry[] = JSON.parse(saved);
+        if (localItems.length > 0) {
+          localItems.forEach((entry) => {
+            setDoc(doc(db, 'users', user.uid, 'watchlist', entry.id), {
+              ...entry,
+              userId: user.uid,
+            }).catch(() => {});
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Auto-sync to cloud failed:', e);
+    }
 
     const watchlistPath = `users/${user.uid}/watchlist`;
     const unsubscribeWatchlist = onSnapshot(
@@ -232,13 +255,55 @@ export const WatchlistProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  // Easily and unconditionally clear local data
   const clearLocalData = () => {
-    localStorage.removeItem(LOCAL_STORAGE_WATCHLIST);
-    localStorage.removeItem(LOCAL_STORAGE_HISTORY);
-    if (!user) {
+    try {
+      localStorage.removeItem(LOCAL_STORAGE_WATCHLIST);
+      localStorage.removeItem(LOCAL_STORAGE_HISTORY);
+      localStorage.removeItem('cinefree_local_watchlist');
+      localStorage.removeItem('cinefree_local_history');
       setWatchlist([]);
       setHistory([]);
+    } catch (err) {
+      console.warn('Clear local data error:', err);
     }
+  };
+
+  // Clear cloud data for logged-in user
+  const clearCloudData = async () => {
+    if (!user) {
+      clearLocalData();
+      return;
+    }
+    const watchlistPath = `users/${user.uid}/watchlist`;
+    try {
+      const snap = await getDocs(collection(db, 'users', user.uid, 'watchlist'));
+      const deletions = snap.docs.map((docSnap) =>
+        deleteDoc(doc(db, 'users', user.uid, 'watchlist', docSnap.id))
+      );
+      await Promise.all(deletions);
+      setWatchlist([]);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, watchlistPath);
+    }
+  };
+
+  // Manually sync local entries to cloud
+  const syncLocalToCloud = async (): Promise<number> => {
+    if (!user) return 0;
+    let count = 0;
+    try {
+      for (const item of watchlist) {
+        await setDoc(doc(db, 'users', user.uid, 'watchlist', item.id), {
+          ...item,
+          userId: user.uid,
+        });
+        count++;
+      }
+    } catch (err) {
+      console.warn('Manual cloud sync error:', err);
+    }
+    return count;
   };
 
   return (
@@ -251,6 +316,8 @@ export const WatchlistProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         removeFromWatchlist,
         addToHistory,
         clearLocalData,
+        clearCloudData,
+        syncLocalToCloud,
         isCloudSynced: Boolean(user),
       }}
     >

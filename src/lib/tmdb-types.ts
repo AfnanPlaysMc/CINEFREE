@@ -177,3 +177,41 @@ export interface PlaybackSource {
   verified: boolean;
   notes?: string;
 }
+
+export interface TMDBPerson {
+  id: number;
+  name: string;
+  profile_path: string | null;
+  known_for_department?: string;
+  popularity?: number;
+  media_type?: 'person';
+  known_for?: (TMDBMovie | TMDBTVShow)[];
+}
+
+export interface TMDBPersonDetail {
+  id: number;
+  name: string;
+  biography: string;
+  birthday?: string | null;
+  deathday?: string | null;
+  place_of_birth?: string | null;
+  profile_path: string | null;
+  known_for_department?: string;
+  popularity?: number;
+  also_known_as?: string[];
+  gender?: number;
+}
+
+export interface TMDBPersonCreditItem extends AnyMedia {
+  id: number;
+  character?: string;
+  job?: string;
+  department?: string;
+  media_type: 'movie' | 'tv';
+}
+
+export interface TMDBPersonCombinedCredits {
+  id: number;
+  cast: TMDBPersonCreditItem[];
+  crew: TMDBPersonCreditItem[];
+}

@@ -96,9 +96,10 @@ export function fetchMoviesByGenre(genreId: number, page = 1) {
 }
 
 // Free Full Movies (Open Source & Public Domain Archives)
-export function fetchFreeFullMovies() {
+export function fetchFreeFullMovies(page = 1) {
   return tmdbFetch<TMDBPaginatedResponse<TMDBMovie>>('/discover/movie', {
     free_full: 'true',
+    page,
   });
 }
 
@@ -163,19 +164,46 @@ export function fetchTVWatchProviders(id: number) {
   return tmdbFetch<TMDBWatchProvidersResponse>(`/tv/${id}/watch/providers`);
 }
 
-// Multi-Search (Movies & TV, removes people)
+// Person Search, Details, and Combined Credits
+import {
+  TMDBPerson,
+  TMDBPersonDetail,
+  TMDBPersonCombinedCredits
+} from './tmdb-types';
+
+export function fetchPersonSearch(query: string, page = 1) {
+  return tmdbFetch<TMDBPaginatedResponse<TMDBPerson>>('/search/person', {
+    query,
+    page,
+    include_adult: 'false'
+  });
+}
+
+export function fetchPersonDetails(id: number) {
+  return tmdbFetch<TMDBPersonDetail>(`/person/${id}`);
+}
+
+export function fetchPersonCombinedCredits(id: number) {
+  return tmdbFetch<TMDBPersonCombinedCredits>(`/person/${id}/combined_credits`);
+}
+
+// Multi-Search (Movies, TV, and People)
 export async function fetchMultiSearch(query: string, page = 1) {
-  const data = await tmdbFetch<TMDBPaginatedResponse<TMDBMediaItem & { media_type: string }>>('/search/multi', {
+  const data = await tmdbFetch<TMDBPaginatedResponse<any>>('/search/multi', {
     query,
     page,
     include_adult: 'false',
   });
 
-  // Filter out 'person' results as mandated
-  const filteredResults = (data.results || []).filter(item => item.media_type === 'movie' || item.media_type === 'tv');
+  const allItems = data.results || [];
+  const mediaItems: TMDBMediaItem[] = allItems.filter(
+    (item: any) => item.media_type === 'movie' || item.media_type === 'tv' || (!item.media_type && (item.title || item.name))
+  );
+  const peopleItems: TMDBPerson[] = allItems.filter((item: any) => item.media_type === 'person');
 
   return {
     ...data,
-    results: filteredResults
+    results: mediaItems,
+    people: peopleItems,
   };
 }
