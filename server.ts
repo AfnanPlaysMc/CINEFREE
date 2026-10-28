@@ -35,7 +35,7 @@ const TEN_MINUTES = 10 * 60 * 1000;
 // Authentic fallback data for seed catalog
 import { FALLBACK_CATALOG, findFallbackDetail, searchFallbackCatalog } from './src/lib/fallback-data.ts';
 
-const DEFAULT_TMDB_KEY = '4e44d9029b1270a757cddc766a1bcb63';
+const DEFAULT_TMDB_KEY = '407886e825dc0d2581cc397ce2289f4a';
 
 app.get('/api/config', (_req: Request, res: Response) => {
   res.json({
