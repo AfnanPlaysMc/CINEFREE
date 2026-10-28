@@ -19,6 +19,7 @@ import { VideoPlayer } from './components/VideoPlayer';
 import { TMDBMediaItem } from './lib/tmdb-types';
 import { MovieStreamSource, getFullMovieStream } from './lib/providers';
 import { MobileBottomNav } from './components/MobileBottomNav';
+import { ServerSelectModal } from './components/ServerSelectModal';
 import { Film } from 'lucide-react';
 import { CINEFREE_LOGO_URL, OXA_LOGO_URL } from './components/Navbar';
 
@@ -153,24 +154,14 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Launch full movie playback in clean popout window
+  const [selectedStreamForModal, setSelectedStreamForModal] = useState<MovieStreamSource | null>(null);
+
+  // Launch server selector modal for movie playback
   const handlePlayMovie = (item: TMDBMediaItem, episodeTitle?: string) => {
     const type: 'movie' | 'tv' = item.media_type || ('title' in item && item.title ? 'movie' : 'tv');
     const title = 'title' in item && item.title ? item.title : 'name' in item ? item.name : 'Movie';
     const stream = getFullMovieStream(item.id, String(title), type, episodeTitle);
-    
-    const defaultServerUrl = stream.servers[0]?.embedUrl;
-    if (defaultServerUrl) {
-      const width = 1240;
-      const height = 700;
-      const left = Math.max(0, (window.screen.width - width) / 2);
-      const top = Math.max(0, (window.screen.height - height) / 2);
-      window.open(
-        defaultServerUrl,
-        `cinefree_stream_${stream.mediaId}`,
-        `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes`
-      );
-    }
+    setSelectedStreamForModal(stream);
   };
 
   return (
@@ -258,6 +249,27 @@ export default function App() {
 
             {/* Mobile Bottom Navigation */}
             <MobileBottomNav currentTab={currentTab} onNavigate={navigateToTab} />
+
+            {/* Server Selection Modal */}
+            {selectedStreamForModal && (
+              <ServerSelectModal
+                stream={selectedStreamForModal}
+                onClose={() => setSelectedStreamForModal(null)}
+                onSelectServer={(server) => {
+                  const stream = selectedStreamForModal;
+                  setSelectedStreamForModal(null);
+                  const width = 1240;
+                  const height = 700;
+                  const left = Math.max(0, (window.screen.width - width) / 2);
+                  const top = Math.max(0, (window.screen.height - height) / 2);
+                  window.open(
+                    server.embedUrl,
+                    `cinefree_stream_${stream.mediaId}_${server.id}`,
+                    `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes`
+                  );
+                }}
+              />
+            )}
           </div>
         </WatchlistProvider>
       </AuthProvider>

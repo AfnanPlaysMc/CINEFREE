@@ -43,9 +43,9 @@ import { useWatchlist } from '../context/WatchlistContext';
 import { CastRow } from '../components/CastRow';
 import { EpisodeList } from '../components/EpisodeList';
 import { WatchProviders } from '../components/WatchProviders';
+import { ServerSelectModal } from '../components/ServerSelectModal';
+import { getFullMovieStream, MovieStreamSource } from '../lib/providers';
 import { MovieRow } from '../components/MovieRow';
-import { VideoPlayer } from '../components/VideoPlayer';
-import { MovieStreamSource, getFullMovieStream } from '../lib/providers';
 import { SpiderManEasterEgg } from '../components/SpiderManEasterEgg';
 
 interface DetailViewProps {
@@ -152,20 +152,11 @@ export const DetailView: React.FC<DetailViewProps> = ({
     }
   };
 
+  const [selectedStreamForModal, setSelectedStreamForModal] = useState<MovieStreamSource | null>(null);
+
   const handlePlayFullMovie = () => {
     const stream = activeStream || getFullMovieStream(mediaId, title, mediaType);
-    const defaultServerUrl = stream.servers[0]?.embedUrl;
-    if (defaultServerUrl) {
-      const width = 1240;
-      const height = 700;
-      const left = Math.max(0, (window.screen.width - width) / 2);
-      const top = Math.max(0, (window.screen.height - height) / 2);
-      window.open(
-        defaultServerUrl,
-        `cinefree_stream_${stream.mediaId}`,
-        `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes`
-      );
-    }
+    setSelectedStreamForModal(stream);
   };
 
   const handlePlayEpisode = (ep: TMDBEpisode) => {
@@ -179,18 +170,7 @@ export const DetailView: React.FC<DetailViewProps> = ({
       sNum,
       eNum
     );
-    const defaultServerUrl = stream.servers[0]?.embedUrl;
-    if (defaultServerUrl) {
-      const width = 1240;
-      const height = 700;
-      const left = Math.max(0, (window.screen.width - width) / 2);
-      const top = Math.max(0, (window.screen.height - height) / 2);
-      window.open(
-        defaultServerUrl,
-        `cinefree_stream_${stream.mediaId}`,
-        `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes`
-      );
-    }
+    setSelectedStreamForModal(stream);
   };
 
   if (loading) {
@@ -450,8 +430,7 @@ export const DetailView: React.FC<DetailViewProps> = ({
                   onPlayMovie={(item) => {
                     const type: 'movie' | 'tv' = item.media_type || ('title' in item && item.title ? 'movie' : 'tv');
                     const t = getMediaTitle(item);
-                    setActiveStream(getFullMovieStream(item.id, t, type));
-                    setShowPlayer(true);
+                    setSelectedStreamForModal(getFullMovieStream(item.id, t, type));
                   }}
                 />
               </div>
@@ -460,13 +439,7 @@ export const DetailView: React.FC<DetailViewProps> = ({
         </div>
       </div>
 
-      {/* CineFree Native Video Player Modal */}
-      {showPlayer && activeStream && (
-        <VideoPlayer
-          stream={activeStream}
-          onClose={() => setShowPlayer(false)}
-        />
-      )}
+
 
       {/* Official YouTube Trailer Modal */}
       {showTrailer && trailerKey && (
@@ -488,6 +461,27 @@ export const DetailView: React.FC<DetailViewProps> = ({
             />
           </div>
         </div>
+      )}
+
+      {/* Server Selection Modal */}
+      {selectedStreamForModal && (
+        <ServerSelectModal
+          stream={selectedStreamForModal}
+          onClose={() => setSelectedStreamForModal(null)}
+          onSelectServer={(server) => {
+            const stream = selectedStreamForModal;
+            setSelectedStreamForModal(null);
+            const width = 1240;
+            const height = 700;
+            const left = Math.max(0, (window.screen.width - width) / 2);
+            const top = Math.max(0, (window.screen.height - height) / 2);
+            window.open(
+              server.embedUrl,
+              `cinefree_stream_${stream.mediaId}_${server.id}`,
+              `width=${width},height=${height},left=${left},top=${top},menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=yes`
+            );
+          }}
+        />
       )}
     </div>
   );

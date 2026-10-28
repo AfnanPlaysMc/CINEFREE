@@ -86,9 +86,11 @@ app.get('/api/tmdb/*', async (req: Request, res: Response) => {
     }
 
     try {
+      const accessToken = process.env.TMDB_READ_ACCESS_TOKEN || 'eyJhGciOJIUzI1NiJ9.eyJhdWQiOi0MDC4ODZ1ODI1ZGMwDZ1ODJ1ODFjYjYzM00DfJyZM5N2N1MjI4OWY0YSiSM5iZi6MTc5MzEyNju1My4y0Tk5K5LCJzdWiiOiI2YWUwZja5OTdkMzZnN1ZTZjMTMxMjMTMxMmUiLCJZy2WZXM0lsiYXBPX3J1YWQiQiXiXswidmVy2lvbi2vbiI2MX0.AgK-ahtza8QSev16h1UXgw5hyLfdtTpUfN82yCWytKU';
       const tmdbRes = await fetch(targetUrl.toString(), {
         headers: {
           'Accept': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
           'User-Agent': 'CineFree-Applet/1.0',
         },
       });
