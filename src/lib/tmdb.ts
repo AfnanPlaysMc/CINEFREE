@@ -16,7 +16,7 @@ import {
   TMDBPersonDetail,
   TMDBPersonCombinedCredits
 } from './tmdb-types';
-import { FALLBACK_CATALOG, findFallbackDetail, searchFallbackCatalog, FALLBACK_MOVIES, FALLBACK_TV_SHOWS } from './fallback-data';
+import { FALLBACK_CATALOG, findFallbackDetail, searchFallbackCatalog } from './fallback-data';
 
 const API_BASE = '/api/tmdb';
 
@@ -25,78 +25,16 @@ function getCustomApiKey(): string | null {
   return localStorage.getItem('cinefree_custom_tmdb_key');
 }
 
-export function setCustomApiKey(key: string | null) {
-  if (typeof window === 'undefined') return;
-  if (!key) {
-    localStorage.removeItem('cinefree_custom_tmdb_key');
-  } else {
-    localStorage.setItem('cinefree_custom_tmdb_key', key.trim());
-  }
-}
-
 async function tmdbFetch<T>(endpoint: string, params: Record<string, string | number> = {}): Promise<T> {
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  const customKey = getCustomApiKey() || '407886e825dc0d2581cc397ce2289f4a';
 
-  // Check static fallback catalog first for instant open-source reliability on Vercel static hosting
-  if (cleanEndpoint === 'trending/movie/week') {
-    return FALLBACK_CATALOG['trending/movie/week'] as unknown as T;
-  }
-  if (cleanEndpoint === 'movie/popular') {
-    return FALLBACK_CATALOG['movie/popular'] as unknown as T;
-  }
-  if (cleanEndpoint === 'movie/top_rated') {
-    return FALLBACK_CATALOG['movie/top_rated'] as unknown as T;
-  }
-  if (cleanEndpoint === 'movie/now_playing') {
-    return FALLBACK_CATALOG['movie/now_playing'] as unknown as T;
-  }
-  if (cleanEndpoint === 'trending/tv/week') {
-    return FALLBACK_CATALOG['trending/tv/week'] as unknown as T;
-  }
-  if (cleanEndpoint === 'tv/popular') {
-    return FALLBACK_CATALOG['tv/popular'] as unknown as T;
-  }
-  if (cleanEndpoint === 'tv/top_rated') {
-    return FALLBACK_CATALOG['tv/top_rated'] as unknown as T;
-  }
-  if (cleanEndpoint.startsWith('discover/movie')) {
-    const genre = params.with_genres;
-    if (params.free_full === 'true' || genre === 'free_full') {
-      return FALLBACK_CATALOG['discover/movie?free_full=true'] as unknown as T;
-    }
-    if (genre === 28 || genre === '28') return FALLBACK_CATALOG['discover/movie?with_genres=28'] as unknown as T;
-    if (genre === 35 || genre === '35') return FALLBACK_CATALOG['discover/movie?with_genres=35'] as unknown as T;
-    if (genre === 27 || genre === '27') return FALLBACK_CATALOG['discover/movie?with_genres=27'] as unknown as T;
-    if (genre === 878 || genre === '878') return FALLBACK_CATALOG['discover/movie?with_genres=878'] as unknown as T;
-    return FALLBACK_CATALOG['movie/popular'] as unknown as T;
-  }
-
-  // Details fallback check (/movie/:id or /tv/:id etc.)
-  const movieDetailMatch = cleanEndpoint.match(/^movie\/(\d+)(?:\/([a-z_/]+))?$/);
-  if (movieDetailMatch) {
-    const id = parseInt(movieDetailMatch[1], 10);
-    const sub = movieDetailMatch[2] || '';
-    const detail = findFallbackDetail('movie', id, sub);
-    if (detail) return detail as unknown as T;
-  }
-
-  const tvDetailMatch = cleanEndpoint.match(/^tv\/(\d+)(?:\/([a-z_0-9/]+))?$/);
-  if (tvDetailMatch) {
-    const id = parseInt(tvDetailMatch[1], 10);
-    const sub = tvDetailMatch[2] || '';
-    const detail = findFallbackDetail('tv', id, sub);
-    if (detail) return detail as unknown as T;
-  }
-
-  // Try fetching via local proxy or direct TMDB API
+  // 1. Try proxy fetch
   const url = new URL(endpoint.startsWith('/') ? `${API_BASE}${endpoint}` : `${API_BASE}/${endpoint}`, window.location.origin);
   Object.entries(params).forEach(([key, val]) => {
     if (val !== undefined && val !== null && val !== '') {
       url.searchParams.set(key, String(val));
     }
   });
-
-  const customKey = getCustomApiKey() || '407886e825dc0d2581cc397ce2289f4a';
 
   try {
     const res = await fetch(url.toString(), {
@@ -106,10 +44,9 @@ async function tmdbFetch<T>(endpoint: string, params: Record<string, string | nu
     if (res.ok && contentType.includes('application/json')) {
       return res.json() as Promise<T>;
     }
-  } catch (err) {
-    // Fall through to direct TMDB or fallback
-  }
+  } catch (err) {}
 
+  // 2. Try direct fetch
   try {
     const directUrl = new URL(`https://api.themoviedb.org/3${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`);
     directUrl.searchParams.set('api_key', customKey);
@@ -129,21 +66,45 @@ async function tmdbFetch<T>(endpoint: string, params: Record<string, string | nu
     if (directRes.ok) {
       return directRes.json() as Promise<T>;
     }
-  } catch (err) {
-    // Fall through to fallback
-  }
+  } catch (err) {}
 
-  // Ultimate fallback data to ensure zero blank pages
-  if (cleanEndpoint.includes('search/multi') || cleanEndpoint.includes('search/person')) {
-    const q = String(params.query || '');
-    return searchFallbackCatalog(q) as unknown as T;
-  }
+  // 3. Fallback to static catalog only if everything else fails
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  const fallback = handleFallbackRequest(cleanEndpoint, params);
+  if (fallback) return fallback as unknown as T;
 
-  return FALLBACK_CATALOG['trending/movie/week'] as unknown as T;
+  throw new Error(`Failed to fetch data from ${endpoint}`);
+}
+
+function handleFallbackRequest(subpath: string, query: Record<string, string | number>) {
+  if (subpath === 'trending/movie/week') return FALLBACK_CATALOG['trending/movie/week'];
+  if (subpath === 'movie/popular') return FALLBACK_CATALOG['movie/popular'];
+  if (subpath === 'movie/top_rated') return FALLBACK_CATALOG['movie/top_rated'];
+  if (subpath === 'movie/now_playing') return FALLBACK_CATALOG['movie/now_playing'];
+  if (subpath === 'trending/tv/week') return FALLBACK_CATALOG['trending/tv/week'];
+  if (subpath === 'tv/popular') return FALLBACK_CATALOG['tv/popular'];
+  if (subpath === 'tv/top_rated') return FALLBACK_CATALOG['tv/top_rated'];
+  
+  if (subpath.startsWith('discover/movie')) {
+    const genre = query.with_genres;
+    if (query.free_full === 'true' || genre === 'free_full') return FALLBACK_CATALOG['discover/movie?free_full=true'];
+    if (genre == 28) return FALLBACK_CATALOG['discover/movie?with_genres=28'];
+    return FALLBACK_CATALOG['movie/popular'];
+  }
+  
+  const movieDetailMatch = subpath.match(/^movie\/(\d+)(?:\/([a-z_/]+))?$/);
+  if (movieDetailMatch) return findFallbackDetail('movie', parseInt(movieDetailMatch[1], 10), movieDetailMatch[2] || '');
+  
+  const tvDetailMatch = subpath.match(/^tv\/(\d+)(?:\/([a-z_0-9/]+))?$/);
+  if (tvDetailMatch) return findFallbackDetail('tv', parseInt(tvDetailMatch[1], 10), tvDetailMatch[2] || '');
+  
+  if (subpath.includes('search/multi') || subpath.includes('search/person')) return searchFallbackCatalog(String(query.query || ''));
+  
+  return null;
 }
 
 export async function checkServerConfig(): Promise<{ hasTmdbKey: boolean; mode: string }> {
-  return { hasTmdbKey: true, mode: 'opensource-catalog' };
+  return { hasTmdbKey: true, mode: 'live-tmdb' };
 }
 
 // 1. Trending Movies
@@ -175,7 +136,7 @@ export function fetchMoviesByGenre(genreId: number, page = 1) {
   });
 }
 
-// Free Full Movies (Open Source & Public Domain Archives)
+// Free Full Movies
 export function fetchFreeFullMovies(page = 1) {
   return tmdbFetch<TMDBPaginatedResponse<TMDBMovie>>('/discover/movie', {
     free_full: 'true',
@@ -254,48 +215,24 @@ export function fetchPersonSearch(query: string, page = 1) {
 }
 
 export function fetchPersonDetails(id: number) {
-  const match = FALLBACK_MOVIES[0];
-  return Promise.resolve({
-    id,
-    name: id === 1136406 ? 'Tom Holland' : 'Actor Profile',
-    biography: 'Renowned actor known for blockbuster cinematic universes and acclaimed performances worldwide.',
-    birthday: '1996-06-01',
-    place_of_birth: 'London, England',
-    profile_path: '/5OK84Wn1bIEIThFKcVoaN087mLj.jpg',
-    known_for_department: 'Acting',
-    popularity: 99.9,
-    also_known_as: ['Thomas Stanley Holland']
-  } as TMDBPersonDetail);
+  return tmdbFetch<TMDBPersonDetail>(`/person/${id}`);
 }
 
 export function fetchPersonCombinedCredits(id: number) {
-  return Promise.resolve({
-    id,
-    cast: FALLBACK_MOVIES.map(m => ({ ...m, media_type: 'movie' as const, character: 'Star' })),
-    crew: []
-  } as TMDBPersonCombinedCredits);
+  return tmdbFetch<TMDBPersonCombinedCredits>(`/person/${id}/combined_credits`);
 }
 
 // Multi-Search (Movies, TV, and People)
 export async function fetchMultiSearch(query: string, page = 1) {
-  const searchResult = searchFallbackCatalog(query);
-  const peopleItems: TMDBPerson[] = [
-    {
-      id: 1136406,
-      name: 'Tom Holland',
-      profile_path: '/5OK84Wn1bIEIThFKcVoaN087mLj.jpg',
-      known_for_department: 'Acting',
-      popularity: 99.9,
-      media_type: 'person' as const,
-      known_for: [FALLBACK_MOVIES[0], FALLBACK_MOVIES[2]]
-    }
-  ].filter(p => p.name.toLowerCase().includes(query.toLowerCase().trim()));
-
+  const data = await tmdbFetch<any>('/search/multi', {
+    query,
+    page,
+    include_adult: 'false',
+  });
+  
   return {
-    page: 1,
-    results: searchResult.results as TMDBMediaItem[],
-    people: peopleItems,
-    total_pages: 1,
-    total_results: searchResult.results.length
+    ...data,
+    results: (data.results || []).filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv'),
+    people: (data.results || []).filter((item: any) => item.media_type === 'person'),
   };
 }
