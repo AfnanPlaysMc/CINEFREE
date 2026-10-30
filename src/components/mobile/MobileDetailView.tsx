@@ -177,14 +177,25 @@ export const MobileDetailView: React.FC<MobileDetailViewProps> = ({
           </div>
         </div>
 
-        {/* Floating Quick Play Button on Hero */}
-        <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center">
+        {/* Floating Quick Play & Popout Buttons on Hero */}
+        <div className="absolute bottom-4 left-4 right-4 z-20 flex flex-col sm:flex-row items-center justify-center gap-2 max-w-md mx-auto">
           <button
             onClick={() => setShowPlayer(true)}
-            className="px-6 py-3 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold text-sm flex items-center gap-2.5 shadow-2xl shadow-purple-600/50 active:scale-95 transition-transform cursor-pointer border border-white/20"
+            className="w-full sm:w-auto px-6 py-3 rounded-full bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-2xl shadow-purple-600/50 active:scale-95 transition-transform cursor-pointer border border-white/20"
           >
             <Play className="w-4 h-4 fill-current ml-0.5" />
             <span>Watch Movie Now</span>
+          </button>
+
+          <button
+            onClick={() => {
+              const url = activeStream?.servers?.[0]?.embedUrl || `https://multiembed.mov/?video_id=${mediaId}&tmdb=1`;
+              window.open(url, '_blank', 'noopener,noreferrer');
+            }}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-cyan-300 hover:text-white font-bold text-xs flex items-center justify-center gap-2 border border-cyan-500/30 active:scale-95 transition-transform cursor-pointer shadow-lg"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            <span>Popout Player 🚀</span>
           </button>
         </div>
       </div>

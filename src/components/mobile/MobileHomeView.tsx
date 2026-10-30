@@ -90,7 +90,7 @@ export const MobileHomeView: React.FC<MobileHomeViewProps> = ({
 
   return (
     <div className="min-h-screen bg-[#080a14] text-white pb-32">
-      {/* 1. Mobile Header (Hello 👋 Floyd Miles + Bell + Menu) */}
+      {/* 1. Mobile Header (Hello 👋 User + Bell + Menu) */}
       <MobileHeader onNavigate={onNavigate} />
 
       {/* 2. 3D Cover Flow Carousel (Screen 1 in Reference) */}

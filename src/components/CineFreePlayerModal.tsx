@@ -166,6 +166,26 @@ export const CineFreePlayerModal: React.FC<CineFreePlayerModalProps> = ({
         ref={containerRef}
         className="relative w-full max-w-6xl bg-[#090d1a] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[96vh]"
       >
+        {/* Mandatory Mobile / Tablet Popout Recommended Banner */}
+        <div className="bg-gradient-to-r from-purple-900/90 via-indigo-900/90 to-blue-900/90 border-b border-purple-500/30 px-3 py-2 flex items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="flex h-2 w-2 relative flex-none">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500" />
+            </span>
+            <span className="text-zinc-200 font-medium truncate">
+              <strong className="text-white font-bold">Popout Recommended:</strong> Tap Popout for full touch controls & 1080p stream on mobile/tablet!
+            </span>
+          </div>
+          <button
+            onClick={handleOpenMobileTab}
+            className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg flex-none cursor-pointer border border-white/20 active:scale-95 transition-transform"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            <span>Pop Out Player 🚀</span>
+          </button>
+        </div>
+
         {/* Top Header Bar */}
         <div className="flex items-center justify-between px-3 sm:px-6 py-3 border-b border-white/10 bg-[#0c1020] gap-3">
           <div className="flex items-center gap-2.5 min-w-0">

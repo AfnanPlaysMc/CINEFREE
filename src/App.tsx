@@ -30,15 +30,15 @@ export default function App() {
   const [selectedMedia, setSelectedMedia] = useState<{ id: number; mediaType: 'movie' | 'tv' } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Mobile viewport detection
+  // Mobile & Tablet viewport detection (< 1024px)
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
-    return window.innerWidth < 768;
+    return window.innerWidth < 1024;
   });
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
+      setIsMobile(window.innerWidth < 1024);
     };
     handleResize();
     window.addEventListener('resize', handleResize);

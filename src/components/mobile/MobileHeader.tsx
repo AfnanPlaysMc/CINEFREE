@@ -56,7 +56,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
               {user?.photoURL ? (
                 <img
                   src={user.photoURL}
-                  alt={user.displayName || 'Avatar'}
+                  alt={user.displayName || 'User'}
                   className="w-10 h-10 rounded-full object-cover border-2 border-purple-500/50 shadow-md"
                 />
               ) : (
@@ -74,7 +74,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                 <span>👋</span>
               </div>
               <div className="text-sm font-bold text-white tracking-tight">
-                {user?.displayName?.split(' ')[0] || 'Floyd Miles'}
+                {user?.displayName ? user.displayName.split(' ')[0] : 'User'}
               </div>
             </div>
           </div>
