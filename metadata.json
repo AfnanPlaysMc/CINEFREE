@@ -2,5 +2,5 @@
   "name": "CineFree",
   "description": "Discover movies and TV shows, watch official trailers, find authorized streaming availability, and manage your watchlist.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }

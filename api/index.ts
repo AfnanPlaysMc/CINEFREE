@@ -5,16 +5,13 @@
 
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { FALLBACK_CATALOG, findFallbackDetail, searchFallbackCatalog } from '../src/lib/fallback-data.ts';
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const app = express();
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+const DEFAULT_TMDB_KEY = '407886e825dc0d2581cc397ce2289f4a';
 
 app.use(express.json());
 
@@ -26,10 +23,6 @@ interface CacheEntry {
 const cache = new Map<string, CacheEntry>();
 const ONE_HOUR = 60 * 60 * 1000;
 const TEN_MINUTES = 10 * 60 * 1000;
-
-import { FALLBACK_CATALOG, findFallbackDetail, searchFallbackCatalog } from '../src/lib/fallback-data.ts';
-
-const DEFAULT_TMDB_KEY = '407886e825dc0d2581cc397ce2289f4a';
 
 app.get('/api/config', (_req: Request, res: Response) => {
   res.json({
@@ -62,16 +55,12 @@ app.get('/api/tmdb/*', async (req: Request, res: Response) => {
 
   const targetUrl = new URL(`${TMDB_BASE_URL}${subpath}`);
   queryParams.forEach((val, k) => targetUrl.searchParams.set(k, val));
-  if (apiKey) {
-    targetUrl.searchParams.set('api_key', apiKey);
-  }
+  targetUrl.searchParams.set('api_key', apiKey);
 
   try {
-    const accessToken = process.env.TMDB_READ_ACCESS_TOKEN || 'eyJhGciOJIUzI1NiJ9.eyJhdWQiOi0MDC4ODZ1ODI1ZGMwDZ1ODJ1ODFjYjYzM00DfJyZM5N2N1MjI4OWY0YSiSM5iZi6MTc5MzEyNju1My4y0Tk5K5LCJzdWiiOiI2YWUwZja5OTdkMzZnN1ZTZjMTMxMjMTMxMmUiLCJZy2WZXM0lsiYXBPX3J1YWQiQiXiXswidmVy2lvbi2vbiI2MX0.AgK-ahtza8QSev16h1UXgw5hyLfdtTpUfN82yCWytKU';
     const tmdbRes = await fetch(targetUrl.toString(), {
       headers: {
         'Accept': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
         'User-Agent': 'CineFree-Applet/1.0',
       },
     });

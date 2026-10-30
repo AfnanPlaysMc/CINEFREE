@@ -759,16 +759,16 @@ export const FALLBACK_CATALOG: Record<string, { page: number; results: unknown[]
 
 export function findFallbackDetail(type: 'movie' | 'tv', id: number, subresource: string) {
   if (type === 'movie') {
-    const movie = FALLBACK_MOVIES.find(m => m.id === id) || FALLBACK_MOVIES[0];
+    const movie = FALLBACK_MOVIES.find(m => m.id === id);
+    if (!movie) return null;
     if (!subresource) return movie;
     if (subresource === 'credits') {
-      return FALLBACK_CREDITS[id] || { id, cast: FALLBACK_CREDITS[693134].cast, crew: FALLBACK_CREDITS[693134].crew };
+      return FALLBACK_CREDITS[id] || { id, cast: [], crew: [] };
     }
     if (subresource === 'videos') {
       if (FALLBACK_VIDEOS[id]) {
         return { id, results: FALLBACK_VIDEOS[id] };
       }
-      // Generate title-specific video entry so no movie ever shows Spiderman trailer by mistake
       return {
         id,
         results: [
@@ -788,10 +788,11 @@ export function findFallbackDetail(type: 'movie' | 'tv', id: number, subresource
       return { page: 1, results: FALLBACK_MOVIES.filter(m => m.id !== id).slice(0, 6), total_pages: 1, total_results: 6 };
     }
     if (subresource === 'watch/providers') {
-      return FALLBACK_PROVIDERS[id] || FALLBACK_PROVIDERS[693134];
+      return FALLBACK_PROVIDERS[id] || null;
     }
   } else {
-    const show = FALLBACK_TV_SHOWS.find(t => t.id === id) || FALLBACK_TV_SHOWS[0];
+    const show = FALLBACK_TV_SHOWS.find(t => t.id === id);
+    if (!show) return null;
     if (!subresource) return show;
     if (subresource.startsWith('season/')) {
       const seasonNum = parseInt(subresource.split('/')[1], 10) || 1;

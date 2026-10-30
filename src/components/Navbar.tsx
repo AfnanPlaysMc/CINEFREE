@@ -4,12 +4,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Search, Bookmark, Settings, LogIn, LogOut, Home, Tv, Clapperboard, CheckCircle2, Dices } from 'lucide-react';
+import { Search, Bookmark, Settings, LogIn, LogOut, Home, Tv, Clapperboard, CheckCircle2, Dices, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useWatchlist } from '../context/WatchlistContext';
 import { SearchBar } from './SearchBar';
 
-export type NavTab = 'home' | 'movies' | 'tv' | 'watchlist' | 'search' | 'settings';
+export type NavTab = 'home' | 'movies' | 'tv' | 'mood' | 'watchlist' | 'search' | 'settings';
 
 interface NavbarProps {
   currentTab: NavTab;
@@ -46,6 +46,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'home', label: 'Home', icon: <Home className="w-4 h-4" /> },
     { id: 'movies', label: 'Movies', icon: <Clapperboard className="w-4 h-4" /> },
     { id: 'tv', label: 'TV Shows', icon: <Tv className="w-4 h-4" /> },
+    { id: 'mood', label: 'Mood Match', icon: <Sparkles className="w-4 h-4 text-blue-400" /> },
     { id: 'watchlist', label: 'My List', icon: <Bookmark className="w-4 h-4" /> },
     { id: 'settings', label: 'Settings', icon: <Settings className="w-4 h-4" /> },
   ];

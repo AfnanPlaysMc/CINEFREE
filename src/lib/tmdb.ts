@@ -6,7 +6,6 @@
 import {
   TMDBMovie,
   TMDBTVShow,
-  TMDBMediaItem,
   TMDBCredits,
   TMDBVideo,
   TMDBSeasonDetail,
@@ -19,14 +18,16 @@ import {
 import { FALLBACK_CATALOG, findFallbackDetail, searchFallbackCatalog } from './fallback-data';
 
 const API_BASE = '/api/tmdb';
+const DEFAULT_TMDB_KEY = '407886e825dc0d2581cc397ce2289f4a';
 
-function getCustomApiKey(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('cinefree_custom_tmdb_key');
+function getCustomApiKey(): string {
+  if (typeof window === 'undefined') return DEFAULT_TMDB_KEY;
+  const stored = localStorage.getItem('cinefree_custom_tmdb_key');
+  return stored && stored.trim().length > 5 ? stored.trim() : DEFAULT_TMDB_KEY;
 }
 
 async function tmdbFetch<T>(endpoint: string, params: Record<string, string | number> = {}): Promise<T> {
-  const customKey = getCustomApiKey() || '407886e825dc0d2581cc397ce2289f4a';
+  const customKey = getCustomApiKey();
 
   // 1. Try proxy fetch
   const url = new URL(endpoint.startsWith('/') ? `${API_BASE}${endpoint}` : `${API_BASE}/${endpoint}`, window.location.origin);
@@ -44,9 +45,11 @@ async function tmdbFetch<T>(endpoint: string, params: Record<string, string | nu
     if (res.ok && contentType.includes('application/json')) {
       return res.json() as Promise<T>;
     }
-  } catch (err) {}
+  } catch {
+    // Continue to direct fetch
+  }
 
-  // 2. Try direct fetch
+  // 2. Try direct fetch with verified TMDB key (no bad Bearer token)
   try {
     const directUrl = new URL(`https://api.themoviedb.org/3${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`);
     directUrl.searchParams.set('api_key', customKey);
@@ -56,17 +59,18 @@ async function tmdbFetch<T>(endpoint: string, params: Record<string, string | nu
       }
     });
 
-    const accessToken = 'eyJhGciOJIUzI1NiJ9.eyJhdWQiOi0MDC4ODZ1ODI1ZGMwDZ1ODJ1ODFjYjYzM00DfJyZM5N2N1MjI4OWY0YSiSM5iZi6MTc5MzEyNju1My4y0Tk5K5LCJzdWiiOiI2YWUwZja5OTdkMzZnN1ZTZjMTMxMjMTMxMmUiLCJZy2WZXM0lsiYXBPX3J1YWQiQiXiXswidmVy2lvbi2vbiI2MX0.AgK-ahtza8QSev16h1UXgw5hyLfdtTpUfN82yCWytKU';
     const directRes = await fetch(directUrl.toString(), {
       headers: {
         'Accept': 'application/json',
-        'Authorization': `Bearer ${accessToken}`
+        'User-Agent': 'CineFree-Applet/1.0'
       }
     });
     if (directRes.ok) {
       return directRes.json() as Promise<T>;
     }
-  } catch (err) {}
+  } catch {
+    // Continue to fallback
+  }
 
   // 3. Fallback to static catalog only if everything else fails
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
@@ -224,15 +228,52 @@ export function fetchPersonCombinedCredits(id: number) {
 
 // Multi-Search (Movies, TV, and People)
 export async function fetchMultiSearch(query: string, page = 1) {
-  const data = await tmdbFetch<any>('/search/multi', {
+  const data = await tmdbFetch<{ results?: Array<Record<string, unknown>> }>('/search/multi', {
     query,
     page,
     include_adult: 'false',
   });
   
+  const results = data.results || [];
   return {
     ...data,
-    results: (data.results || []).filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv'),
-    people: (data.results || []).filter((item: any) => item.media_type === 'person'),
+    results: (results.filter((item) => item.media_type === 'movie' || item.media_type === 'tv')) as unknown as (TMDBMovie | TMDBTVShow)[],
+    people: (results.filter((item) => item.media_type === 'person')) as unknown as TMDBPerson[],
   };
+}
+
+/**
+ * Cinema Synesthesia Mood Search
+ */
+export interface MoodSearchResult {
+  moodSummary: string;
+  results: TMDBMovie[];
+  rationales: Record<number, string>;
+  tags: Record<number, string[]>;
+  scores: Record<number, number>;
+}
+
+export async function fetchMoodSearch(payload: {
+  prompt?: string;
+  energy?: number;
+  tone?: number;
+  heart?: number;
+  intellect?: number;
+  vibes?: string[];
+}): Promise<MoodSearchResult> {
+  const customKey = getCustomApiKey();
+  const res = await fetch('/api/mood-search', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-tmdb-key': customKey
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    throw new Error(`Mood search request failed with status ${res.status}`);
+  }
+
+  return res.json() as Promise<MoodSearchResult>;
 }
